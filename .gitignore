@@ -1,0 +1,34 @@
+# Local source snapshots and cleanup tooling
+.cleanup-backup/
+_*.py
+_reachability.json
+
+# Research assets and runtime output (distributed separately)
+database5/
+Datenbanken_Ordner_v5/
+best_models/
+results/
+running/
+recent_finish/
+blosum/
+hla_list*
+app.R
+environment_expitope3.yml
+requirements_expitope3.txt
+
+# Python, editors, credentials
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.swp
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
