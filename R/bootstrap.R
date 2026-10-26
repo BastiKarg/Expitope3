@@ -10,6 +10,7 @@ missing_packages <- packages[!vapply(packages, requireNamespace, logical(1), qui
 if (length(missing_packages)) stop("Run scripts/install_shiny_dependencies.R; missing packages: ",
                                    paste(missing_packages, collapse = ", "))
 for (package in packages) suppressPackageStartupMessages(library(package, character.only = TRUE))
+shiny::addResourcePath("expitope-assets", file.path(config$root, "www"))
 HLAset <- read_optional_table(file.path(config$data_dir, "hla_list_hla_only_resorted2"), "HLA", header = FALSE)
 HLAset <- data.frame(HLA = unique(trimws(unlist(strsplit(HLAset$HLA, ",", fixed = TRUE)))))
 ENSGset <- read_optional_table(file.path(config$data_dir, "ensg_list"), "ensg", sep = ",", header = FALSE)

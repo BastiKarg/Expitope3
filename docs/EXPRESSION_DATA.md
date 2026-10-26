@@ -2,7 +2,8 @@
 
 TCGA TPM tables and metadata are available locally. The added 54 GTEx v11
 `gene_reads_adult_gtex_v11_*.gct` files contain raw counts, not TPM.
-The missing part is **individual-sample GTEx TPM**, grouped into one file per tissue.
+The matching 54 individual-sample GTEx v11 TPM GCT files have also been supplied locally.
+Use the importer below to create the explorer tables; raw counts remain excluded.
 The existing reference database tables contain tissue summaries and cannot
 reconstruct sample distributions for boxplots, violin plots or beeswarms.
 
