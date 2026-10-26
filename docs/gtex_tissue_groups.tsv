@@ -1,0 +1,55 @@
+source_tissue	group	body
+adipose_subcutaneous	GTEX_adipose	Adipose
+adipose_visceral_omentum	GTEX_adipose	Adipose
+adrenal_gland	GTEX_adrenal_gland	Adrenal Gland
+artery_aorta	GTEX_artery	Artery
+artery_coronary	GTEX_artery	Artery
+artery_tibial	GTEX_artery	Artery
+bladder	GTEX_bladder	Bladder
+brain_amygdala	GTEX_brain	Brain
+brain_anterior_cingulate_cortex_ba24	GTEX_brain	Brain
+brain_caudate_basal_ganglia	GTEX_brain	Brain
+brain_cerebellar_hemisphere	GTEX_brain	Brain
+brain_cerebellum	GTEX_brain	Brain
+brain_cortex	GTEX_brain	Brain
+brain_frontal_cortex_ba9	GTEX_brain	Brain
+brain_hippocampus	GTEX_brain	Brain
+brain_hypothalamus	GTEX_brain	Brain
+brain_nucleus_accumbens_basal_ganglia	GTEX_brain	Brain
+brain_putamen_basal_ganglia	GTEX_brain	Brain
+brain_spinal_cord_cervical_c-1	GTEX_brain	Brain
+brain_substantia_nigra	GTEX_brain	Brain
+breast_mammary_tissue	GTEX_breast	Breast
+cells_cultured_fibroblasts	GTEX_cells_cultured_fibroblasts	Cells Cultured Fibroblasts
+cells_ebv-transformed_lymphocytes	GTEX_cells_ebv-transformed_lymphocytes	Cells Ebv-Transformed Lymphocytes
+cervix_ectocervix	GTEX_cervix	Cervix
+cervix_endocervix	GTEX_cervix	Cervix
+colon_sigmoid	GTEX_colon	Colon
+colon_transverse	GTEX_colon	Colon
+esophagus_gastroesophageal_junction	GTEX_esophagus	Esophagus
+esophagus_mucosa	GTEX_esophagus	Esophagus
+esophagus_muscularis	GTEX_esophagus	Esophagus
+fallopian_tube	GTEX_fallopian_tube	Fallopian Tube
+heart_atrial_appendage	GTEX_heart	Heart
+heart_left_ventricle	GTEX_heart	Heart
+kidney_cortex	GTEX_kidney	Kidney
+kidney_medulla	GTEX_kidney	Kidney
+liver	GTEX_liver	Liver
+lung	GTEX_lung	Lung
+minor_salivary_gland	GTEX_salivary_gland	Salivary Gland
+muscle_skeletal	GTEX_muscle	Muscle
+nerve_tibial	GTEX_nerve_tibial	Nerve Tibial
+ovary	GTEX_ovary	Ovary
+pancreas	GTEX_pancreas	Pancreas
+pituitary	GTEX_pituitary	Pituitary
+prostate	GTEX_prostate	Prostate
+skin_not_sun_exposed_suprapubic	GTEX_skin	Skin
+skin_sun_exposed_lower_leg	GTEX_skin	Skin
+small_intestine_terminal_ileum	GTEX_small_intestine	Small Intestine
+spleen	GTEX_spleen	Spleen
+stomach	GTEX_stomach	Stomach
+testis	GTEX_testis	Testis
+thyroid	GTEX_thyroid	Thyroid
+uterus	GTEX_uterus	Uterus
+vagina	GTEX_vagina	Vagina
+whole_blood	GTEX_whole_blood	Whole Blood

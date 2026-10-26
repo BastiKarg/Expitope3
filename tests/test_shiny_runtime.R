@@ -10,6 +10,7 @@ local({
   writeLines(c("id\ts1", "ENSG1\t2"), file.path(mixed, "GTEX_liver.tsv"))
   writeLines(c("id\ts2", "ENSG1.1_GENE_protein_coding\t3"), file.path(mixed, "TCGA-ACC_tpm.tsv"))
   writeLines("raw counts excluded", file.path(mixed, "TCGA-ACC.tsv"))
+  writeLines("sample_id\tsource_tissue", file.path(mixed, "GTEX_liver.samples.tsv"))
   stopifnot(setequal(names(expression_files(mixed)), c("GTEX_liver", "TCGA-ACC")),
             expression_gene_metadata(expression_files(mixed))$gene == "GENE",
             read_gene_expression(file.path(mixed, "GTEX_liver.tsv"), "ENSG1")$expression == 2)

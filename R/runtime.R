@@ -102,6 +102,7 @@ expression_files <- function(folder) {
   files <- if (length(tpm)) c(tpm, list.files(folder, pattern = "^GTEX.*\\.tsv$", full.names = TRUE, ignore.case = TRUE)) else
     list.files(folder, pattern = "\\.tsv$", full.names = TRUE)
   files <- unique(files)
+  files <- files[!grepl("\\.samples\\.tsv$", files)]
   setNames(files, sub("_tpm$", "", tools::file_path_sans_ext(basename(files))))
 }
 

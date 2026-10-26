@@ -14,6 +14,12 @@ HLAset <- read_optional_table(file.path(config$data_dir, "hla_list_hla_only_reso
 HLAset <- data.frame(HLA = unique(trimws(unlist(strsplit(HLAset$HLA, ",", fixed = TRUE)))))
 ENSGset <- read_optional_table(file.path(config$data_dir, "ensg_list"), "ensg", sep = ",", header = FALSE)
 tissue_groups <- read_optional_table(file.path(config$data_dir, "tcga_gtex_tissues.tsv"), c("tissue", "body"))
+gtex_groups <- read_optional_table("docs/gtex_tissue_groups.tsv", c("group", "body"))
+if (nrow(gtex_groups)) {
+  tissue_groups <- tissue_groups[, c("tissue", "body")]
+  tissue_groups <- tissue_groups[!grepl("^GTEX_", tissue_groups$tissue), ]
+  tissue_groups <- rbind(tissue_groups, unique(data.frame(tissue = gtex_groups$group, body = gtex_groups$body)))
+}
 ensg_genename <- read_optional_table(file.path(config$data_dir, "ensg_genename.tsv"), c("ENSG", "gene"))
 expression_paths <- expression_files(config$expression_dir)
 if (!nrow(ensg_genename)) ensg_genename <- expression_gene_metadata(expression_paths)
