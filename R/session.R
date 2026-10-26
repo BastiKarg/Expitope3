@@ -1,4 +1,27 @@
-# Shared handlers for the standard and tumor submission forms.
+# Link Plotly keys to original rows, independent of trace/colour grouping.
+link_plot_selection <- function(source, session) {
+  rows <- shiny::reactiveVal(data.frame())
+  selected <- shiny::reactiveVal(integer())
+  shiny::observeEvent(rows(), selected(integer()), ignoreNULL = FALSE)
+  indices <- function(event) {
+    if (is.null(event$key)) return(integer())
+    match(unique(as.character(unlist(event$key))), as.character(seq_len(nrow(rows()))), nomatch = 0L) |>
+      (function(x) x[x > 0L])()
+  }
+  shiny::observeEvent(plotly::event_data("plotly_selected", source = source, session = session, priority = "event"), {
+    selected(indices(plotly::event_data("plotly_selected", source = source, session = session, priority = "event")))
+  }, ignoreNULL = FALSE, ignoreInit = TRUE)
+  shiny::observeEvent(plotly::event_data("plotly_deselect", source = source, session = session, priority = "event"), {
+    selected(integer())
+  })
+  shiny::observeEvent(plotly::event_data("plotly_click", source = source, session = session, priority = "event"), {
+    ids <- indices(plotly::event_data("plotly_click", source = source, session = session, priority = "event"))
+    selected(c(setdiff(selected(), ids), setdiff(ids, selected())))
+  })
+  list(rows = rows, table = shiny::reactive(rows()[selected(), , drop = FALSE]))
+}
+
+# Submission handler for the prediction form.
 configure_session <- function(input, output, session, config, HLAset) {
   submit_prediction <- function(suffix = "") {
     value <- function(id, default = "") {
@@ -18,7 +41,7 @@ configure_session <- function(input, output, session, config, HLAset) {
         if (suffix == "") value("kmer", "normal_seq") else "normal_seq",
         value("input6"), config$queue_dir)
       message <- paste("Job queued for project", project,
-                       "— processing requires the Linux prediction worker.")
+                       "â€” processing requires the Linux prediction worker.")
       output[[paste0("results", suffix)]] <- renderText(message)
     }, error = function(e) {
       output[[paste0("results", suffix)]] <- renderText(conditionMessage(e))

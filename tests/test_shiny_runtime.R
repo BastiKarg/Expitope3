@@ -5,6 +5,14 @@ local({
   on.exit(unlink(root, recursive = TRUE))
   expect_error <- function(expr) stopifnot(inherits(tryCatch({force(expr); NULL}, error = identity), "error"))
   path <- file.path(root, "tissue.tsv")
+  mixed <- file.path(root, "mixed")
+  dir.create(mixed)
+  writeLines(c("id\ts1", "ENSG1\t2"), file.path(mixed, "GTEX_liver.tsv"))
+  writeLines(c("id\ts2", "ENSG1.1_GENE_protein_coding\t3"), file.path(mixed, "TCGA-ACC_tpm.tsv"))
+  writeLines("raw counts excluded", file.path(mixed, "TCGA-ACC.tsv"))
+  stopifnot(setequal(names(expression_files(mixed)), c("GTEX_liver", "TCGA-ACC")),
+            expression_gene_metadata(expression_files(mixed))$gene == "GENE",
+            read_gene_expression(file.path(mixed, "GTEX_liver.tsv"), "ENSG1")$expression == 2)
   writeLines(c("id\tsample-B\tsample-A", "ENSG1\t2.5\t7", "ENSG10\t99\t99"), path)
   expr <- read_gene_expression(path, "ENSG1")
   stopifnot(identical(expr$case_id, c("sample-B", "sample-A")), identical(expr$expression, c(2.5, 7)))

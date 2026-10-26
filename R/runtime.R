@@ -99,13 +99,16 @@ read_gene_expression <- function(path, gene) {
 
 expression_files <- function(folder) {
   tpm <- list.files(folder, pattern = "_tpm\\.tsv$", full.names = TRUE)
-  files <- if (length(tpm)) tpm else list.files(folder, pattern = "\\.tsv$", full.names = TRUE)
+  files <- if (length(tpm)) c(tpm, list.files(folder, pattern = "^GTEX.*\\.tsv$", full.names = TRUE, ignore.case = TRUE)) else
+    list.files(folder, pattern = "\\.tsv$", full.names = TRUE)
+  files <- unique(files)
   setNames(files, sub("_tpm$", "", tools::file_path_sans_ext(basename(files))))
 }
 
 expression_gene_metadata <- function(files) {
   if (!length(files)) return(data.frame(ENSG = character(), gene = character()))
-  path <- unname(files[[1]])
+  tpm <- files[grepl("_tpm\\.tsv$", files)]
+  path <- unname(if (length(tpm)) tpm[[1]] else files[[1]])
   ids <- as.character(data.table::fread(path, select = 1L, data.table = FALSE)[[1]])
   if (!grepl("_tpm\\.tsv$", path)) return(data.frame(ENSG = ids, gene = ids))
   data.frame(ENSG = sub("[._].*$", "", ids),

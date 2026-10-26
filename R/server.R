@@ -400,47 +400,28 @@ server <- function(input, output, session) {
         req(input$tissue_select_server)
         distribution_plot(expression_distribution(reference_tissue(), data_expression(), input$tissue_select_server))
     })
+    bee_selection <- link_plot_selection("bee_source", session)
+    volcano_selection <- link_plot_selection("vulcano_source", session)
     output$beeswarm_plot_gg_server <- renderPlotly({
         req(input$subdir_selection_server)
         if (length(input$tissue_select_plot_server) != 0) {
             df2 <- data_expression()
             validate(need(dim(df2)[1] > 0, "Expression file seems to be empty! Try another file. "))
             data_gather2 <- beeswarm_data(df2, input$tissue_select_plot_server, my_range_server())
-            key <- data_gather2$info
+            bee_selection$rows(setNames(data_gather2[, c("epitope", "distance", "bind", "gene_id", "tissue", "expression")],
+                c("Epitope", "Mismatch", "Bind", "Gene", "Tissue", "Expression")))
+            key <- as.character(seq_len(nrow(data_gather2)))
             p <- ggplot(data_gather2, aes(x = tissue, y = expression, color = tissue, shape = bind, infotext = info,
                 key = key)) + geom_beeswarm(cex = 1.2) + theme(axis.text.x = element_text(angle = 60,
                 hjust = 1)) + ggtitle(paste0("Expression in ", strsplit(x = input$subdir_selection_server,
                 split = ".", fixed = T)[[1]][1], " per tissue and values between ", my_range_server()[1],
                 " and ", my_range_server()[2]))
             p_bee <- ggplotly(p, tooltip = "infotext", source = "bee_source")
-            ggp700(p_bee, "info") %>% event_register("plotly_click")
-        }
-    })
-    selected_data <- reactiveValues(points = data.frame(Epitope = character(0), Mismatch = numeric(0),
-        Bind = character(0), Gene = character(0), Tissue = character(0), Expression = character(0)))
-    observeEvent(event_data("plotly_click", source = "bee_source"), {
-        clicked_point <- event_data("plotly_click", source = "bee_source")
-        if (!is.null(clicked_point)) {
-            clicked_category <- clicked_point$x
-            nearest_point <- min(length(input$tissue_select_plot_server), (max(1, round(as.numeric(clicked_point$x)))))
-            clicked_category <- sort(input$tissue_select_plot_server)[nearest_point]
-            clicked_value <- clicked_point$y
-            clicked_info <- clicked_point$key
-            infos <- (strsplit(unlist(clicked_info), split = "<br />", fixed = T))[[1]]
-            new_point <- data.frame(Epitope = infos[1], Mismatch = strsplit(infos[2], " ", fixed = T)[[1]][2],
-                Bind = strsplit(infos[3], " ", fixed = T)[[1]][2], Gene = infos[4], Tissue = strsplit(infos[5],
-                  ":", fixed = T)[[1]][1], Expression = strsplit(infos[5], " ", fixed = T)[[1]][2])
-            if (any(selected_data$points$Gene == new_point$Gene & selected_data$points$Tissue == new_point$Tissue)) {
-                selected_data$points <- selected_data$points[!(selected_data$points$Gene == new_point$Gene &
-                  selected_data$points$Tissue == new_point$Tissue), ]
-            }
-            else {
-                selected_data$points <- rbind(selected_data$points, new_point)
-            }
+            ggp700(p_bee, "info") %>% layout(dragmode = "lasso") %>% event_register("plotly_click") %>% event_register("plotly_selected") %>% event_register("plotly_deselect")
         }
     })
     output$selected_data_table <- DT::renderDataTable({
-        DT::datatable(selected_data$points, extensions = "Buttons", options = list(paging = TRUE, pageLength = 25,
+        DT::datatable(bee_selection$table(), extensions = "Buttons", options = list(paging = TRUE, pageLength = 25,
             scrollX = TRUE, searching = TRUE, ordering = TRUE, dom = "Bfrtip", buttons = c("copy", "csv",
                 "excel", "pdf")))
     })
@@ -488,41 +469,19 @@ server <- function(input, output, session) {
             "\n", results$gene_id, "\n", input$tissue_select_df1_server, ": ", results[, input$tissue_select_df1_server],
             "\n", input$tissue_select_df2_server, ": ", results[, input$tissue_select_df2_server], "\n",
             results$bind_prediction)
-        results$key <- paste0(results$epitope, "\ndistance", results$distance, "\nbind: ", results$bind,
-            "\n", -1 * log10(results$pvalue), "\n", results$gene_id, "\n", input$tissue_select_df1_server,
-            ": ", results[, input$tissue_select_df1_server], "\n", input$tissue_select_df2_server, ": ",
-            results[, input$tissue_select_df2_server], "\n", results$bind_prediction)
+        volcano_selection$rows(data.frame(Epitope = results$epitope, Mismatch = results$distance,
+            Bind = results$bind, Pvalue = results$pvalue, Gene = results$gene_id,
+            Tissue1 = paste(input$tissue_select_df1_server, results[[input$tissue_select_df1_server]], sep = ": "),
+            Tissue2 = paste(input$tissue_select_df2_server, results[[input$tissue_select_df2_server]], sep = ": ")))
+        results$key <- as.character(seq_len(nrow(results)))
         p <- ggplot(data = results, aes(x = foldchange, y = -1 * log10(pvalue), color = bind, infotext = info,
             key = key)) + geom_point(size = 2) + ggtitle(paste0("Differential Expression of ", input$tissue_select_df1_server,
             " vs ", input$tissue_select_df2_server)) + ylab("-log10(p-value)") + xlab("log2 fold change")
         p_vul <- ggplotly(p, tooltip = "infotext", source = "vulcano_source")
-        ggp700(p_vul, "info") %>% event_register("plotly_click") %>% onRender(js)
-    })
-    selected_data_vulcano <- reactiveValues(points = data.frame(Epitope = character(0), Mismatch = numeric(0),
-        Bind = character(0), Pval = character(0), Gene = character(0), Tissue1 = character(0), Tissue2 = character(0)))
-    observeEvent(event_data("plotly_click", , source = "vulcano_source"), {
-        clicked_point_vulcano <- event_data("plotly_click", source = "vulcano_source")
-        if (!is.null(clicked_point_vulcano)) {
-            clicked_category <- clicked_point_vulcano$x
-            clicked_value <- clicked_point_vulcano$y
-            clicked_info <- clicked_point_vulcano$key
-            infos <- (strsplit(clicked_info, split = "<br />", fixed = T))[[1]]
-            print(infos)
-            new_point <- data.frame(Epitope = infos[1], Mismatch = strsplit(infos[2], " ", fixed = T)[[1]][2],
-                Bind = strsplit(infos[3], " ", fixed = T)[[1]][2], Pval = infos[4], Gene = infos[5],
-                Tissue1 = infos[6], Tissue2 = infos[7])
-            if (any(selected_data_vulcano$points$Gene == new_point$Gene & selected_data_vulcano$points$Tissue1 ==
-                new_point$Tissue1)) {
-                selected_data_vulcano$points <- selected_data_vulcano$points[!(selected_data_vulcano$points$Gene ==
-                  new_point$Gene & selected_data_vulcano$points$Tissue1 == new_point$Tissue1), ]
-            }
-            else {
-                selected_data_vulcano$points <- rbind(selected_data_vulcano$points, new_point)
-            }
-        }
+        ggp700(p_vul, "info") %>% layout(dragmode = "lasso") %>% event_register("plotly_click") %>% event_register("plotly_selected") %>% event_register("plotly_deselect") %>% onRender(js)
     })
     output$selected_data_table_vulcano <- DT::renderDataTable({
-        DT::datatable(selected_data_vulcano$points, extensions = "Buttons", options = list(paging = TRUE,
+        DT::datatable(volcano_selection$table(), extensions = "Buttons", options = list(paging = TRUE,
             pageLength = 25, scrollX = TRUE, searching = TRUE, ordering = TRUE, dom = "Bfrtip", buttons = c("copy",
                 "csv", "excel", "pdf")))
     })
