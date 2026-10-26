@@ -12,7 +12,21 @@ running/
 recent_finish/
 blosum/
 hla_list*
-app.R
+app_local.R
+app_skripte.R
+3d/
+kanu/
+.r-library/
+.Rhistory
+.RData
+.Rproj.user/
+tcga/
+tcga_read_counts/
+dataset/
+model/
+ensg_list
+ensg_genename.tsv
+Datenbanken_Ordner_shiny/
 environment_expitope3.yml
 requirements_expitope3.txt
 

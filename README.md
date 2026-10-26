@@ -4,9 +4,20 @@ Python research pipeline for searching protein sequences for potential epitope
 cross-reactivity and combining cleavage, MHC presentation, TAP transport,
 ProtT5 embeddings, neural-network classification, and tissue expression scores.
 
-This repository contains the Python backend reachable from `main_final.py`.
-The R application, historical benchmarks, duplicate entry points, databases,
-trained checkpoints, and generated results are outside this source release.
+This repository contains the Python backend reachable from `main_final.py`
+and the restored Shiny interface (`app.R`, with modules in `R/`). See
+[setup and launch instructions](docs/RUNNING.md) and
+[restoration status](docs/SHINY_RESTORATION.md). Databases, trained checkpoints,
+generated results and historical source copies are distributed separately.
+
+From the repository root, `Rscript scripts/run_shiny.R` launches the interface.
+The Data Visualisation tab includes the restored reference-expression histogram
+and optimized beeswarm. The histogram uses the matching file in
+`Datenbanken_Ordner_shiny/`; it reports joined reference/match rows, so multiple
+epitope matches for a gene can contribute multiple counts. Its 99 bins include
+the maximum expression value and safely handle constant expression. Hover text
+lists up to 54 matching entries per bin. New structure jobs remain unavailable
+pending restoration of the optional Linux TCRdock/Rosetta worker.
 
 ## Pipeline
 
