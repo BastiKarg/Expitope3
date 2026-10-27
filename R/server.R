@@ -403,6 +403,7 @@ server <- function(input, output, session) {
     bee_selection <- link_plot_selection("bee_source", session)
     volcano_selection <- link_plot_selection("vulcano_source", session)
     output$beeswarm_plot_gg_server <- renderPlotly({
+        validate(need(length(input$tissue_select_plot_server) > 0, "Please select at least one tissue."))
         req(input$subdir_selection_server)
         if (length(input$tissue_select_plot_server) != 0) {
             df2 <- data_expression()
@@ -686,6 +687,7 @@ server <- function(input, output, session) {
         cbind(input$min_tpm_server[1], input$min_tpm_server[2])
     })
     output$beeswarm_plot_gg <- renderPlotly({
+        validate(need(length(input$tissue_select_plot) > 0, "Please select at least one tissue."))
         req(input$file_ex)
         if (length(input$tissue_select_plot) != 0) {
             df2 <- as.data.frame(read.table(input$file_ex$datapath, header = TRUE, sep = "\t"))
@@ -773,7 +775,8 @@ server <- function(input, output, session) {
     updateSelectizeInput(session, "tcga_tissues", choices = names(expression_paths), server = TRUE)
     session_store <- reactiveValues()
     expression_data <- reactive({
-        req(input$tcga_ensg, input$tcga_tissues)
+        validate(need(length(input$tcga_tissues) > 0, "Please select at least one tissue."))
+        req(input$tcga_ensg)
         validate(need(all(input$tcga_tissues %in% names(expression_paths)), "Choose an available tissue"))
         do.call(rbind, lapply(input$tcga_tissues, function(tissue)
             read_gene_expression(unname(expression_paths[[tissue]]), input$tcga_ensg)))
@@ -785,10 +788,12 @@ server <- function(input, output, session) {
         paste("Expression of", name, paste0("(", input$tcga_ensg, ")"))
     })
     output$tcga_boxplot <- renderPlotly({
+        validate(need(length(input$tcga_tissues) > 0, "Please select at least one tissue."))
         expression_plot(expression_data(), input$tcga_plot, input$tcga_scale,
                         "decreasing", tissue_groups, gene_title())
     })
     selected_expression_plot <- reactive({
+        validate(need(length(input$tcga_tissues) > 0, "Please select at least one tissue."))
         expression_plot(expression_data(), input$tcga_plot, input$tcga_scale,
                         input$tcga_order, tissue_groups, gene_title())
     })
