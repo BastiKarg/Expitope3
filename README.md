@@ -53,7 +53,7 @@ as part of the source cleanup.
 Run from the repository root. Supply these assets separately, keeping the
 reference-protein order consistent with the precomputed cleavage tables:
 
-- `database5/database_october.fa`
+- `database5/Expitope3_final_clean_database_singlev3.fa_new_clean`
 - `database5/pepsickle_default.tsv`
 - `database5/pepsickle_gbm_C.tsv` and `pepsickle_gbm_I.tsv`
 - `database5/pepsickle_nn_C.tsv` and `pepsickle_nn_I.tsv`

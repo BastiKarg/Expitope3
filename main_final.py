@@ -83,7 +83,7 @@ def run_mut_loaded(epi, fullseq, id, output_dir, HLA_allele, pep_model, predicto
 
     mlp_predict.mlp_prediction_multi_in_one_loaded_bench_create_trainingset(epitopes, output_dir, epi, f_string, hla_string, mlp_model)
 
-def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pcleav_predictor="e", thresh_pcleav=0.5, alpha=0.2, threshQ=0.02,
+def run_waiting_loaded_multicore(job_path=None, once=False):
     global fix, epi, k, output_dir, pep_model, HLA_allel, predictor, indel_bool
 
     from Bio import SwissProt
@@ -93,7 +93,19 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
     pepsickle_filese = ['database5/pepsickle_default.tsv', 'database5/pepsickle_gbm_C.tsv',
                         'database5/pepsickle_gbm_I.tsv', 'database5/pepsickle_nn_C.tsv',
                         'database5/pepsickle_nn_I.tsv', ]
-    pep_modles = [pandas.read_table(pepsickle_filese[0]),pandas.read_table(pepsickle_filese[1]),pandas.read_table(pepsickle_filese[2]),pandas.read_table(pepsickle_filese[3]),pandas.read_table(pepsickle_filese[4]),]
+    for index in (3, 4):
+        if not os.path.isfile(pepsickle_filese[index]) or os.path.getsize(pepsickle_filese[index]) == 0:
+            print(f"Pepsickle model {index + 1} unavailable; using default (authorized fallback)")
+            pepsickle_filese[index] = pepsickle_filese[0]
+    loaded_pepsickle = {}
+    def get_pepsickle(index):
+        path = pepsickle_filese[index]
+        if path not in loaded_pepsickle:
+            table = pandas.read_table(path)
+            if int(table["protein_id"].max()) != len(proteins):
+                raise ValueError(f"{path}: protein IDs do not match the current FASTA ({len(proteins)} proteins). Supply matching cleavage tables before database-wide jobs.")
+            loaded_pepsickle[path] = table
+        return loaded_pepsickle[path]
 
     from mhcflurry import class1_presentation_predictor as mhc
     predictor = mhc.Class1PresentationPredictor.load()
@@ -106,7 +118,7 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
     print("Using {}".format(device))
     print("we are in the function run_waiting_loaded_multicore")
     model, tokenizer = embedding.get_T5_model()
-    proteinDB="database5/database_october.fa"
+    proteinDB="database5/Expitope3_final_clean_database_singlev3.fa_new_clean"
     proteins = list(SeqIO.parse(open(proteinDB),'fasta'))
 
     mlp_models_loaded = [mlp_predict.MLP.load_from_checkpoint("./best_models/best_val_f1.2_9547_113.ckpt", weights_only=True), mlp_predict.MLP.load_from_checkpoint("./best_models/atlas_best_val_f1.2_08846_47.ckpt", weights_only=True), mlp_predict.MLP.load_from_checkpoint("./best_models/best_val_f1.2_9547_113.ckpt", weights_only=True)]
@@ -128,7 +140,7 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
         while len(list_full_paths(file_path)) == 0:
             time.sleep(1)
         else:
-            job_todo = max(list_full_paths(file_path), key=os.path.getctime)  ### this was changed to work from latest to oldest
+            job_todo = job_path or max(list_full_paths(file_path), key=os.path.getctime)
             job = list(pandas.read_csv(job_todo, sep=' ').columns)
             if (len(job) == 7):
                 epi, hla, mismatches, outdir, pep_modle, mlp_num, kmer = job
@@ -138,7 +150,7 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
 
                 pep_modle = int(float(pep_modle))
                 k = mismatches
-                pep_model = pep_modles[pep_modle - 1]
+                pep_model = get_pepsickle(pep_modle - 1)
                 outdir = "./results/" + outdir
                 if kmer == "indel":
                     indel_bool = "indel"
@@ -151,12 +163,14 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
                 if not os.path.exists(outdir):
                     os.makedirs(outdir)
                 if kmer == "normal_seq":
-                    run_new_app_v3_loaded_multicore(epi, mismatches, id, outdir, [hla], pep_modles[pep_modle - 1], predictor,
+                    run_new_app_v3_loaded_multicore(epi, mismatches, id, outdir, [hla], get_pepsickle(pep_modle - 1), predictor,
                                           model, tokenizer, mlp_models_loaded[mlp_num - 1], proteins)
                 else:
-                    run_new_app_v3_loaded_multicore_kmer(epi, mismatches, id, outdir, [hla], pep_modles[pep_modle - 1], predictor,
+                    run_new_app_v3_loaded_multicore_kmer(epi, mismatches, id, outdir, [hla], get_pepsickle(pep_modle - 1), predictor,
                                           model, tokenizer, mlp_models_loaded[mlp_num - 1], proteins, int(kmer))
                 os.replace(job_todo, "./recent_finish/last_finish")
+                if once:
+                    return
 
             elif (len(job) == 8):
                 epi, hla, mismatches, outdir, pep_modle, mlp_num, kmer, custom_seq = job # custom_seq, kmer
@@ -166,7 +180,6 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
 
                 pep_modle = int(float(pep_modle))
                 k = mismatches
-                pep_model = pep_modles[pep_modle - 1]
                 outdir = "./results/" + outdir
 
                 if kmer == "indel":
@@ -188,6 +201,10 @@ def run_waiting_loaded_multicore():  # epi, k, id, output_dir, HLA_allele=[], pc
                         run_mut_loaded(seq, custom_seq, id, outdir, [hla], pep_modle, predictor, model, tokenizer,
                                        mlp_models_loaded[mlp_num - 1])
                 os.replace(job_todo, "./recent_finish/last_finish")
+                if once:
+                    return
+            else:
+                raise ValueError(f"Expected 7 or 8 job fields in {job_todo}; found {len(job)}")
 
 def run_new_app_v3_loaded_multicore(epi_x, k_x, id, output_dir_x, HLA_allele, pep_model_x, predictor_x, model, tokenizer, mlp_model, proteins):
 
@@ -195,7 +212,6 @@ def run_new_app_v3_loaded_multicore(epi_x, k_x, id, output_dir_x, HLA_allele, pe
     global search_index
     global indel_bool
 
-    search_index = [0, 39432, 78864, 118296, 157728, 197160, 236592, 276024, 315456, 354888, 394320, 433752, 473182, 512612, 552042, 591472]
 
     epi = epi_x
     k = k_x
@@ -214,6 +230,7 @@ def run_new_app_v3_loaded_multicore(epi_x, k_x, id, output_dir_x, HLA_allele, pe
     number_of_task = 15
     print("Starting " + str(number_of_task) + " tasks")
     proteins_split = np.array_split(np.asarray(proteins,dtype="object"), number_of_task)
+    search_index = np.cumsum([0] + [len(part) for part in proteins_split[:-1]]).tolist()
     epitopes = set()
     shared_queue = SimpleQueue()
     print("Indel is " + str(indel_bool))
@@ -373,4 +390,12 @@ def run_new_app_v3_loaded_multicore_kmer(epi_x, k_x, id, output_dir_x, HLA_allel
     print("Wrote tables")
 
 if __name__ == "__main__":
-    run_waiting_loaded_multicore()
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--job", help="Process only this existing file inside running/ and exit")
+    parser.add_argument("--once", action="store_true", help="Exit after one completed job")
+    args = parser.parse_args()
+    if args.job:
+        if os.path.dirname(os.path.realpath(args.job)) != os.path.realpath("running") or not os.path.isfile(args.job):
+            parser.error("--job must name an existing file directly inside running/")
+    run_waiting_loaded_multicore(args.job, args.once or bool(args.job))

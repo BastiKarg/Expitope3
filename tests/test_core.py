@@ -27,6 +27,24 @@ def load_function(filename, name):
 
 
 class CoreTests(unittest.TestCase):
+    def test_cleavage_cache_and_fasta_count_guard(self):
+        tree = ast.parse((ROOT / 'main_final.py').read_text())
+        fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == 'get_pepsickle')
+        reads = []
+        def read_table(path):
+            reads.append(path)
+            return {'protein_id': SimpleNamespace(max=lambda: 2 if path == 'default' else 3)}
+        scope = dict(pepsickle_filese=['default', 'default', 'mismatch'],
+                     loaded_pepsickle={}, proteins=[None, None],
+                     pandas=SimpleNamespace(read_table=read_table))
+        exec(compile(ast.Module(body=[fn], type_ignores=[]), 'main_final.py', 'exec'), scope)
+        load = scope['get_pepsickle']
+        self.assertIs(load(0), load(1))
+        self.assertEqual(reads, ['default'])
+        with self.assertRaisesRegex(ValueError, 'do not match'):
+            load(2)
+        self.assertNotIn('mismatch', scope['loaded_pepsickle'])
+
     def test_fixed_positions(self):
         fixed = load_function('main_final.py', 'get_fixed_pos')
         self.assertEqual(fixed('SLLMWITQC'), ('SLLMWITQC', []))
