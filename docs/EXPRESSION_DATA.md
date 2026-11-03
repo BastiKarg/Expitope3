@@ -74,3 +74,25 @@ Ensembl gene start/end coordinates, rather than the release's quantification
 annotation, and its v10 filename handling does not match the supplied v11 data.
 Official TPM avoids this approximation. TPM units alone do not remove TCGA–GTEx
 processing/batch differences; these plots are descriptive comparisons.
+
+## Faster single-gene queries
+
+After importing or replacing expression tables, build the optional row indexes:
+
+```sh
+python scripts/index_expression.py tcga_read_counts
+```
+
+The Shiny loader automatically uses adjacent `.tsv.gidx` files to read just the
+requested gene's row. These are byte offsets, not transformed or reduced data.
+Sample IDs, ordering and numeric expression values are preserved. The small
+indexes are cached in the R process. Absent or stale indexes (source size or
+modification time changed) fall back to the original full-table reader; rebuild
+indexes after updates to restore fast queries. Do not preserve old timestamps
+when replacing a table. Index creation rejects files modified during indexing.
+
+Local measurements on 2026-11-03 for ENSG00000000003: GTEx brain full-table read
+3.45 s, first indexed read 0.14 s, repeated indexed reads averaging 0.10 s;
+GTEx liver 0.72 s versus 0.08 s / 0.009 s. These measure data loading, not browser
+rendering, and depend on hardware and filesystem cache. Outputs were identical.
+Run `Rscript tests/benchmark_expression_index.R` to reproduce locally.

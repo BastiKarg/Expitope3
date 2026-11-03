@@ -82,9 +82,36 @@ pdb_residue_selection <- function(path, chain = "B") {
   paste(paste0(residues, ":", chain), collapse = " or ")
 }
 
+expression_index_cache <- new.env(parent = emptyenv())
+
+indexed_expression_row <- function(path, gene) {
+  index_path <- paste0(path, ".gidx")
+  if (!file.exists(index_path)) return(NULL)
+  info <- file.info(c(path, index_path))
+  signature <- c(info$size, as.numeric(info$mtime))
+  cached <- expression_index_cache[[path]]
+  if (is.null(cached) || !identical(cached$signature, signature)) {
+    metadata <- as.numeric(strsplit(readLines(index_path, n = 1L), "\t", fixed = TRUE)[[1]])
+    if (length(metadata) != 2L || anyNA(metadata) || metadata[1] != info$size[1] ||
+        abs(metadata[2] - as.numeric(info$mtime[1])) > 0.001) return(NULL)
+    cached <- list(signature = signature,
+                   index = data.table::fread(index_path, skip = 1L, data.table = FALSE))
+    expression_index_cache[[path]] <- cached
+  }
+  hit <- cached$index[cached$index$id == gene, , drop = FALSE]
+  if (nrow(hit) != 1L) stop("Expected one row for ", gene, " in ", path, "; found ", nrow(hit))
+  con <- file(path, "rb")
+  on.exit(close(con))
+  header <- readLines(con, n = 1L, warn = FALSE)
+  seek(con, where = hit$offset, origin = "start")
+  row <- rawToChar(readBin(con, "raw", n = hit$length))
+  data.table::fread(text = paste0(header, "\n", row), data.table = FALSE, check.names = FALSE)
+}
+
 read_gene_expression <- function(path, gene) {
   if (!file.exists(path)) stop("Missing expression table: ", path)
-  tab <- data.table::fread(path, data.table = FALSE, check.names = FALSE)
+  tab <- indexed_expression_row(path, gene)
+  if (is.null(tab)) tab <- data.table::fread(path, data.table = FALSE, check.names = FALSE)
   if (grepl("_tpm\\.tsv$", path)) {
     names(tab)[1] <- "id"
     tab$id <- sub("[._].*$", "", tab$id)

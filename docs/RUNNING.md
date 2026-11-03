@@ -55,6 +55,9 @@ Ubuntu 22.04 / WSL2 is installed locally. The isolated environment is
 Its model caches belong to the WSL root account, used for this initial test.
 GPU passthrough is detected, but GPU model inference is not validated.
 
+Update 2026-11-03: ProtT5 GPU inference has now been tested separately (see below).
+The full worker remains in the validated CPU environment.
+
 On 2026-10-27, a Shiny-generated queue file for the synthetic custom sequence
 `MKTIIALSYIFCLVFADYKDDDDK` and peptide `ALSYIFCLV` completed with real cleavage,
 MHCflurry, TAP, ProtT5 and classifier computations on CPU. Output is local under
@@ -82,6 +85,38 @@ whereas the current FASTA has 315451 entries: database-wide jobs need matching
 tables and matching protein order. An ID count check rejects this known mismatch;
 equal counts alone would not prove correct ordering. Custom-sequence jobs compute
 cleavage directly and do not use these tables.
+
+### Isolated ProtT5 GPU check (2026-11-03)
+
+The separate `/opt/expitope3-gpu-test` environment uses Python 3.10,
+PyTorch 2.7.1+cu128, transformers 4.29.2, sentencepiece 0.1.99 and numpy 1.24.3.
+It reuses the same root-account model cache. PyTorch's
+[2.7 release](https://pytorch.org/blog/pytorch-2-7/) introduced Blackwell support
+with CUDA 12.8. The historical CPU environment is unchanged.
+
+Reproduce from the repository root under the same WSL account:
+
+```bash
+CUDA_VISIBLE_DEVICES=-1 /opt/expitope3-venv/bin/python scripts/check_embedding_device.py \
+  --device cpu --output .cleanup-backup/embedding-cpu.npz
+/opt/expitope3-gpu-test/bin/python scripts/check_embedding_device.py \
+  --device cuda --reference .cleanup-backup/embedding-cpu.npz \
+  --output .cleanup-backup/embedding-gpu.npz
+```
+
+The script calls the actual application embedding helper on six peptides,
+checks all 1024 components per peptide, and reports the median of three warmed
+inference runs. Model loading and device transfer are excluded. The observed
+CPU time was 5.008 s (PyTorch 1.13.1, four CPU threads); the RTX 5070 Ti Laptop
+GPU took 0.147 s (PyTorch 2.7.1). Peak allocated GPU memory was 4.84 GB.
+Maximum absolute difference was 2.65e-7; all components passed comparison
+at rtol=1e-3, atol=1e-4. TF32 was disabled. These numbers compare the two tested
+environments, not GPU versus CPU under one identical software version.
+
+This validates the ProtT5 stage only. The isolated GPU environment does not
+contain the full worker dependencies. TensorFlow/MHCflurry coexistence, classifier
+loading and a complete GPU queue run must be tested before changing the normal
+worker environment. The FASTA/cleavage-table matching requirement still applies.
 
 ## GitHub distribution
 

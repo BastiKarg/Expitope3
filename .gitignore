@@ -36,6 +36,7 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+*.gidx
 .ruff_cache/
 *.swp
 .idea/
